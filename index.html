@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estudo Bíblico</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .header {
+      background-color: #39823C;
+      color: white;
+      padding: 5px;
+      text-align: center;
+      width: 100%;
+    }
+
+    .container {
+      padding: 20px;
+      width: 90%;
+      max-width: 1200px;
+    }
+
+    .section {
+      margin-bottom: 20px;
+      background: #fff;
+      padding: 15px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      border-radius: 8px;
+    }
+
+    .carousel {
+      position: relative;
+      overflow: hidden;
+      width: 97.4%;
+      height: 300px;
+      border-radius: 8px;
+    }
+
+    .carousel-inner {
+      display: flex;
+      transition: transform 0.5s ease;
+    }
+
+    .carousel-item {
+      min-width: 100%;
+      box-sizing: border-box;
+      padding: 20px;
+      text-align: center;
+      background: #f4f4f4;
+      border-radius: 8px;
+    }
+
+    .carousel-controls {
+      position: absolute;
+      top: 50%;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      transform: translateY(-50%);
+    }
+
+    .carousel-control {
+      background: rgba(0,0,0,0.5);
+      color: #fff;
+      border: none;
+      padding: 10px;
+      cursor: pointer;
+      border-radius: 50%;
+    }
+
+    .carousel-control:hover {
+      background: rgba(0,0,0,0.8);
+    }
+
+    .versiculo-do-dia, .plano-de-estudo, .anotacoes, .leitura-diaria, .estudo-do-dia {
+      background: #fff;
+      padding: 15px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      border-radius: 8px;
+    }
+
+    @media (max-width: 720px) {
+      .carousel {
+        height: 200px;
+      }
+
+      .carousel-item {
+        padding: 10px;
+      }
+
+      .carousel-control {
+        padding: 5px;
+      }
+
+      .versiculo-do-dia, .plano-de-estudo, .anotacoes, .leitura-diaria, .estudo-do-dia {
+        padding: 10px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .header {
+        padding: 15px;
+      }
+
+      .container {
+        padding: 10px;
+      }
+
+      .carousel {
+        height: 150px;
+      }
+
+      .carousel-item {
+        padding: 5px;
+      }
+
+      .carousel-control {
+        padding: 3px;
+      }
+
+      .versiculo-do-dia, .plano-de-estudo, .anotacoes, .leitura-diaria, .estudo-do-dia {
+        padding: 5px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Bible Study</h1>
+  </div>
+
+  <div class="container">
+    <div class="versiculo-do-dia section">
+      <h2>Versículo do Dia</h2>
+      <p id="versiculo"><strong>Carregando...</strong></p>
+    </div>
+
+    <div class="plano-de-estudo section">
+      <h2>Plano de Estudo</h2>
+      <p>Plano de leitura para hoje: João 3</p>
+    </div>
+
+    <div class="leitura-diaria section">
+      <h2>Leitura Diária</h2>
+      <p>Texto para leitura: Salmos 23</p>
+    </div>
+
+    <div class="estudo-do-dia section">
+      <h2>Estudo Bíblico do Dia</h2>
+      <h3>Tema: A Fé que Transforma</h3>
+      <p><strong>Versículo Base:</strong> "Ora, a fé é a certeza daquilo que esperamos e a prova das coisas que não vemos." - Hebreus 11:1 (Almeida)</p>
+      <p><strong>Reflexão:</strong> A fé é um elemento essencial na vida do cristão. Ela não apenas nos dá esperança, mas também nos transforma. Através da fé, podemos enfrentar desafios, superar dificuldades e alcançar promessas. A fé verdadeira nos aproxima de Deus e nos ajuda a viver de acordo com a Sua vontade. Quando confiamos em Deus e em Seus planos, mesmo sem ver o resultado imediato, demonstramos uma fé madura e sólida. A história de Abraão é um exemplo clássico de fé. Ele confiou em Deus mesmo quando a promessa parecia impossível. Sua fé foi contada como justiça, e ele se tornou o pai de muitas nações. Que possamos aprender com Abraão e desenvolver uma fé que nos impulsione a confiar e obedecer a Deus em todas as circunstâncias.</p>
+    </div>
+
+    <div class="carousel section">
+      <div class="carousel-inner">
+        <div class="carousel-item">Assunto 1</div>
+        <div class="carousel-item">Assunto 2</div>
+        <div class="carousel-item">Assunto 3</div>
+        <div class="carousel-item">Assunto 4</div>
+      </div>
+      <div class="carousel-controls">
+        <button class="carousel-control" id="prev">Anterior</button>
+        <button class="carousel-control" id="next">Próximo</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const carouselInner = document.querySelector('.carousel-inner');
+    const prevButton = document.getElementById('prev');
+    const nextButton = document.getElementById('next');
+    let index = 0;
+
+    function showItem(index) {
+      carouselInner.style.transform = `translateX(-${index * 100}%)`;
+    }
+
+    prevButton.addEventListener('click', () => {
+      index = (index > 0) ? index - 1 : carouselInner.children.length - 1;
+      showItem(index);
+    });
+
+    nextButton.addEventListener('click', () => {
+      index = (index < carouselInner.children.length - 1) ? index + 1 : 0;
+      showItem(index);
+    });
+
+    setInterval(() => {
+      index = (index < carouselInner.children.length - 1) ? index + 1 : 0;
+      showItem(index);
+    }, 3000);
+
+    // Função para buscar versículo do dia
+    async function fetchVersiculo() {
+      try {
+        const response = await fetch('https://www.abibliadigital.com.br/api/verses/nvi/random');
+        const data = await response.json();
+        const versiculoElement = document.getElementById('versiculo');
+        versiculoElement.innerHTML = `<strong>"${data.text}" - ${data.book.name} ${data.chapter}:${data.number} (Almeida)</strong>`;
+      } catch (error) {
+        console.error('Erro ao buscar versículo:', error);
+      }
+    }
+
+    // Atualiza o versículo imediatamente e depois a cada minuto
+    fetchVersiculo();
+    setInterval(fetchVersiculo, 60000);
+  </script>
+</body>
+<html/>
