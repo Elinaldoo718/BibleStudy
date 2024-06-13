@@ -3,135 +3,100 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Estudo Bíblico</title>
+  <title>Aplicativo de Estudo da Bíblia</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+        
+      font-family: 'Arial', sans-serif;
       background-color: #f4f4f4;
-      margin: 0;
+      margin-top: 400px;
       padding: 0;
       display: flex;
-      flex-direction: column;
+      justify-content: center;
       align-items: center;
+      height: 100vh;
     }
 
     .container {
-      padding: 20px;
+      
       width: 90%;
       max-width: 1200px;
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
 
     .section {
       margin-bottom: 20px;
-      background: #fff;
-      padding: 15px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      border-radius: 8px;
+      
     }
 
-    .carousel {
-      position: relative;
-      overflow: hidden;
-      width: 91%;
-      height: 300px;
-      border-radius: 8px;
+    h2 {
+      color: #333333;
+      font-size: 24px;
+      margin-bottom: 10px;
     }
 
-    .carousel-inner {
-      display: flex;
-      transition: transform 0.5s ease;
+    p {
+      color: #666666;
+      font-size: 16px;
+      line-height: 1.6;
     }
 
-    .carousel-item {
-      min-width: 100%;
-      box-sizing: border-box;
-      padding: 20px;
-      text-align: center;
-      background: #f4f4f4;
-      border-radius: 8px;
+    strong {
+      font-weight: bold;
     }
 
-    .carousel-controls {
-      position: absolute;
-      top: 50%;
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      transform: translateY(-50%);
-    }
-
-    .carousel-control {
-      background: rgba(0,0,0,0.5);
-      color: #fff;
+    button {
+      background-color: #007bff;
+      color: #ffffff;
       border: none;
-      padding: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
       cursor: pointer;
-      border-radius: 50%;
+      border-radius: 4px;
+      transition: background-color 0.3s ease;
     }
 
-    .carousel-control:hover {
-      background: rgba(0,0,0,0.8);
+    button:hover {
+      background-color: #0056b3;
     }
 
-    .versiculo-do-dia, .plano-de-estudo, .anotacoes, .leitura-diaria, .estudo-do-dia {
-      background: #fff;
-      padding: 15px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
+    .capitulo {
+      padding: 10px;
+      border: 1px solid #ccc;
       border-radius: 8px;
+      margin-top: 10px;
+      max-height: 300px;
+      overflow-y: auto;
     }
 
-    @media (max-width: 720px) {
-      .carousel {
-        height: 200px;
-      }
-
-      .carousel-item {
-        padding: 10px;
-      }
-
-      .carousel-control {
-        padding: 5px;
-      }
-
-      .versiculo-do-dia, .plano-de-estudo, .anotacoes, .leitura-diaria, .estudo-do-dia {
-        padding: 10px;
-      }
+    .capitulo h2 {
+      font-size: 20px;
+      color: #333333;
+      margin-bottom: 10px;
     }
 
-    @media (max-width: 480px) {
-      .header {
-        padding: 15px;
-      }
+    .capituloVersiculos {
+      font-size: 16px;
+      color: #333333;
+      line-height: 1.6;
+    }
 
-      .container {
-        padding: 10px;
-      }
-
-      .carousel {
-        height: 150px;
-      }
-
-      .carousel-item {
-        padding: 5px;
-      }
-
-      .carousel-control {
-        padding: 3px;
-      }
-
-      .versiculo-do-dia, .plano-de-estudo, .anotacoes, .leitura-diaria, .estudo-do-dia {
-        padding: 5px;
-      }
+    .destacado {
+      background-color: yellow;
+      padding: 3px;
+      border-radius: 3px;
     }
   </style>
 </head>
 <body>
-
   <div class="container">
     <div class="versiculo-do-dia section">
       <h2>Versículo do Dia</h2>
       <p id="versiculo"><strong>Carregando...</strong></p>
+      <button onclick="mostrarCapitulo()" id="btnCapitulo">Ver Capítulo</button>
     </div>
 
     <div class="plano-de-estudo section">
@@ -163,6 +128,11 @@
         <button class="carousel-control" id="next">Próximo</button>
       </div>
     </div>
+
+    <div class="capitulo section">
+      <h2 id="capituloTitulo" style="display: none;"></h2>
+      <div id="capituloVersiculos"></div>
+    </div>
   </div>
 
   <script>
@@ -190,21 +160,57 @@
       showItem(index);
     }, 3000);
 
-    // Função para buscar versículo do dia
+    let lastLoadedVerse = null;
+
     async function fetchVersiculo() {
       try {
-        const response = await fetch('https://www.abibliadigital.com.br/api/verses/nvi/random');
+        const response = await fetch('https://www.abibliadigital.com.br/api/verses/ra/random');
         const data = await response.json();
         const versiculoElement = document.getElementById('versiculo');
-        versiculoElement.innerHTML = `<strong>"${data.text}" - ${data.book.name} ${data.chapter}:${data.number} (Almeida)</strong>`;
+        const versiculoText = `"${data.text}" - ${data.book.name} ${data.chapter}:${data.number} (Almeida)`;
+        versiculoElement.innerHTML = `<strong>${versiculoText}</strong>`;
+        lastLoadedVerse = data;
       } catch (error) {
         console.error('Erro ao buscar versículo:', error);
       }
     }
 
-    // Atualiza o versículo imediatamente e depois a cada minuto
+    async function mostrarCapitulo() {
+      if (!lastLoadedVerse) {
+        console.error('Nenhum versículo carregado ainda.');
+        return;
+      }
+
+      try {
+        const response = await fetch(`https://www.abibliadigital.com.br/api/verses/ra/${lastLoadedVerse.book.id}/${lastLoadedVerse.chapter}`);
+        const data = await response.json();
+
+        let capituloHTML = `<h2>${lastLoadedVerse.book.name} ${lastLoadedVerse.chapter}</h2>`;
+        capituloHTML += `<div class="capituloVersiculos">`;
+
+        data.verses.forEach(verse => {
+          if (verse.number === lastLoadedVerse.number) {
+            capituloHTML += `<span class="destacado">${verse.number}</span> ${verse.text}<br>`;
+          } else {
+            capituloHTML += `${verse.number} ${verse.text}<br>`;
+          }
+        });
+
+        capituloHTML += `</div>`;
+
+        const versiculoElement = document.getElementById('versiculo');
+        versiculoElement.innerHTML = capituloHTML;
+
+        const capituloTitulo = document.getElementById('capituloTitulo');
+        capituloTitulo.textContent = `${lastLoadedVerse.book.name} ${lastLoadedVerse.chapter}`;
+        capituloTitulo.style.display = 'block';
+      } catch (error) {
+        console.error('Erro ao buscar capítulo:', error);
+      }
+    }
+
     fetchVersiculo();
     setInterval(fetchVersiculo, 60000);
   </script>
 </body>
-<html/>
+</html>
