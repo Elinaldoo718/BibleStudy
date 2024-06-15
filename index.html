@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Estudo Interativo da Bíblia</title>
-    <link rel="stylesheet" href="styles9.css">
+    <link rel="stylesheet" href="styles11.css">
 </head>
 <body>
     <header>
@@ -17,14 +17,18 @@
         </section>
         <section id="verse-section">
             <h2>Versículo do Dia</h2>
-            <p id="random-verse"></p>
-            <p id="verse-version"></p>
+            <div id="random-verse" class="verse" onclick="toggleMenu(event)"></div>
+            <div id="verse-version"></div>
+            <div id="context-menu" class="context-menu">
+                <button onclick="salvarVersiculo()">Salvar Versículo</button>
+            </div>
             <div class="button-group">
                 <label for="version-select">Versão:</label>
-                <select id="version-select" onchange="updateVerseVersion()">
-                    <option value="" disabled selected>Selecione uma versão</option>
+                <select id="version-select" onchange="updateVerseVersion()" style="width: 70px;">
+                    <option value="" disabled selected>Selecione</option>
                 </select>
                 <button onclick="generateRandomVerse()">Outro Versículo</button>
+                <button id="toggle-saved-verses" onclick="toggleVersiculosSalvos()">Versículos Salvos</button>
             </div>
         </section>
         <section id="chapter-section">
@@ -36,11 +40,15 @@
             <input type="number" id="chapter-input" placeholder="Capítulo" min="1">
             <button onclick="readChapter()">Ler Capítulo</button>
             <div id="chapter-content"></div>
-            <p id="chapter-version"></p>
+            <div id="chapter-version"></div>
             <div class="nav-buttons">
                 <button onclick="prevChapter()">Capítulo Anterior</button>
                 <button onclick="nextChapter()">Próximo Capítulo</button>
             </div>
+        </section>
+        <section id="saved-verses-section" class="hidden">
+            <h2>Versículos Salvos</h2>
+            <div id="saved-verses"></div>
         </section>
         <section id="resources-section">
             <h2>Recursos de Estudo</h2>
@@ -52,6 +60,9 @@
         </section>
     </main>
     <script>
+        
+        
+
 let currentVersion = 'nvi';
 let currentVerseReference = null;
 let currentBook = null;
@@ -203,12 +214,116 @@ async function nextChapter() {
     }
 }
 
+function toggleMenu(event) {
+    event.stopPropagation();
+    const menu = document.getElementById('context-menu');
+    menu.style.display = 'block';
+    menu.style.left = `${event.pageX}px`;
+    menu.style.top = `${event.pageY}px`;
+}
+
+function salvarVersiculo() {
+    const verseText = document.getElementById('random-verse').innerText;
+    const savedVerses = JSON.parse(localStorage.getItem('savedVerses')) || [];
+    const currentTime = new Date().toLocaleString();
+    savedVerses.push({ text: verseText, timestamp: currentTime });
+    localStorage.setItem('savedVerses', JSON.stringify(savedVerses));
+    alert('Versículo salvo com sucesso!');
+    document.getElementById('context-menu').style.display = 'none';
+}
+
+function toggleVersiculosSalvos() {
+    const savedVersesSection = document.getElementById('saved-verses-section');
+    if (savedVersesSection.classList.contains('hidden')) {
+        savedVersesSection.classList.remove('hidden');
+        exibirVersiculosSalvos();
+    } else {
+        savedVersesSection.classList.add('hidden');
+    }
+}
+
+function exibirVersiculosSalvos() {
+    const savedVerses = JSON.parse(localStorage.getItem('savedVerses')) || [];
+    const savedVersesSection = document.getElementById('saved-verses');
+    savedVersesSection.innerHTML = '';
+    savedVerses.forEach(verse => {
+        const verseElement = document.createElement('div');
+        verseElement.classList.add('saved-verse');
+        const timestampElement = document.createElement('span');
+        timestampElement.classList.add('timestamp');
+        timestampElement.innerText = `Salvo em: ${verse.timestamp}`;
+        const textElement = document.createElement('p');
+        textElement.innerText = verse.text;
+        verseElement.appendChild(textElement);
+        verseElement.appendChild(timestampElement);
+        savedVersesSection.appendChild(verseElement);
+    });
+}
+
+function exibirVersiculo(verse) {
+    document.getElementById('random-verse').innerText = verse;
+}
+
+document.addEventListener('click', (event) => {
+    const menu = document.getElementById('context-menu');
+    if (event.target.closest('.verse') === null && event.target !== menu) {
+        menu.style.display = 'none';
+    }
+});
+
+
+function exibirVersiculosSalvos() {
+    const savedVerses = JSON.parse(localStorage.getItem('savedVerses')) || [];
+    const savedVersesSection = document.getElementById('saved-verses');
+    savedVersesSection.innerHTML = '';
+    savedVerses.forEach((verse, index) => {
+        const verseElement = document.createElement('div');
+        verseElement.classList.add('saved-verse');
+        
+        const textElement = document.createElement('p');
+        textElement.innerText = verse.text;
+        
+        const deleteButton = document.createElement('button');
+        deleteButton.innerText = 'Excluir';
+        deleteButton.addEventListener('click', () => excluirVersiculo(index));
+        
+        const timestampElement = document.createElement('span');
+        timestampElement.classList.add('timestamp');
+        timestampElement.innerText = `Salvo em: ${verse.timestamp}`;
+        
+        verseElement.appendChild(textElement);
+        verseElement.appendChild(deleteButton);
+        verseElement.appendChild(timestampElement);
+        
+        savedVersesSection.appendChild(verseElement);
+    });
+}
+
+
+function excluirVersiculo(index) {
+    let savedVerses = JSON.parse(localStorage.getItem('savedVerses')) || [];
+    savedVerses.splice(index, 1); // Remove o item do array pelo índice
+    localStorage.setItem('savedVerses', JSON.stringify(savedVerses));
+    exibirVersiculosSalvos(); // Atualiza a exibição dos versículos salvos
+}
+
+function toggleVersiculosSalvos() {
+    const savedVersesSection = document.getElementById('saved-verses-section');
+    if (savedVersesSection.classList.contains('hidden')) {
+        savedVersesSection.classList.remove('hidden');
+        exibirVersiculosSalvos();
+    } else {
+        savedVersesSection.classList.add('hidden');
+    }
+}
+
+
 window.onload = () => {
     generateRandomVerse();
     fetchBooks();
     fetchVersions();
 };
-
-</script>
+        
+    </script>
 </body>
 </html>
