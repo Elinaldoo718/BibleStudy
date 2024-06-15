@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Estudo Interativo da Bíblia</title>
-    <link rel="stylesheet" href="styles3.css">
+    <link rel="stylesheet" href="styles9.css">
 </head>
 <body>
     <header>
@@ -22,20 +22,25 @@
             <div class="button-group">
                 <label for="version-select">Versão:</label>
                 <select id="version-select" onchange="updateVerseVersion()">
-                    <option value="" disabled selected></option>
+                    <option value="" disabled selected>Selecione uma versão</option>
                 </select>
                 <button onclick="generateRandomVerse()">Outro Versículo</button>
             </div>
         </section>
         <section id="chapter-section">
             <h2>Leitura de Capítulo</h2>
-            <select id="book-select">
+            <select id="book-select" onchange="fetchBookInfo()">
                 <option value="" disabled selected>Selecione um livro</option>
             </select>
+            <p id="book-info"></p>
             <input type="number" id="chapter-input" placeholder="Capítulo" min="1">
             <button onclick="readChapter()">Ler Capítulo</button>
             <div id="chapter-content"></div>
             <p id="chapter-version"></p>
+            <div class="nav-buttons">
+                <button onclick="prevChapter()">Capítulo Anterior</button>
+                <button onclick="nextChapter()">Próximo Capítulo</button>
+            </div>
         </section>
         <section id="resources-section">
             <h2>Recursos de Estudo</h2>
@@ -47,8 +52,10 @@
         </section>
     </main>
     <script>
-    let currentVersion = 'nvi';
+let currentVersion = 'nvi';
 let currentVerseReference = null;
+let currentBook = null;
+let currentChapter = null;
 
 async function fetchBooks() {
     try {
@@ -63,6 +70,17 @@ async function fetchBooks() {
         });
     } catch (error) {
         console.error('Erro ao buscar livros:', error);
+    }
+}
+
+async function fetchBookInfo() {
+    const book = document.getElementById('book-select').value;
+    try {
+        const response = await fetch(`https://www.abibliadigital.com.br/api/books/${book}`);
+        const data = await response.json();
+        document.getElementById('book-info').innerText = `Autor: ${data.author}, Capítulos: ${data.chapters}, Grupo: ${data.group}, Testamento: ${data.testament}`;
+    } catch (error) {
+        console.error('Erro ao buscar informações do livro:', error);
     }
 }
 
@@ -129,10 +147,10 @@ async function searchVerse() {
 }
 
 async function readChapter() {
-    const book = document.getElementById('book-select').value;
-    const chapter = document.getElementById('chapter-input').value;
+    currentBook = document.getElementById('book-select').value;
+    currentChapter = document.getElementById('chapter-input').value;
     try {
-        const response = await fetch(`https://www.abibliadigital.com.br/api/verses/${currentVersion}/${encodeURIComponent(book)}/${chapter}`);
+        const response = await fetch(`https://www.abibliadigital.com.br/api/verses/${currentVersion}/${encodeURIComponent(currentBook)}/${currentChapter}`);
         const data = await response.json();
         if (data.verses) {
             let chapterContent = '';
@@ -169,11 +187,28 @@ async function updateVerseVersion() {
     }
 }
 
+async function prevChapter() {
+    if (currentBook && currentChapter > 1) {
+        currentChapter--;
+        document.getElementById('chapter-input').value = currentChapter;
+        readChapter();
+    }
+}
+
+async function nextChapter() {
+    if (currentBook && currentChapter) {
+        currentChapter++;
+        document.getElementById('chapter-input').value = currentChapter;
+        readChapter();
+    }
+}
+
 window.onload = () => {
     generateRandomVerse();
     fetchBooks();
     fetchVersions();
 };
+
 </script>
 </body>
 </html>
