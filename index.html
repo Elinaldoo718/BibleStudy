@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Estudo Interativo da Bíblia</title>
-    <link rel="stylesheet" href="styles3.css">
+    <link rel="stylesheet" href="styles7.css">
 </head>
 <body>
     <header>
@@ -12,13 +12,20 @@
     </header>
     <main>
         <section id="search-section">
-            <input type="text" id="search-input" placeholder="Digite um versículo ou palavra-chave">
+            <input type="text" id="search-input" placeholder="Digite uma palavra-chave">
             <button onclick="searchVerse()">Buscar</button>
         </section>
         <section id="verse-section">
             <h2>Versículo do Dia</h2>
             <p id="random-verse"></p>
-            <button onclick="generateRandomVerse()">Outro Versículo</button>
+            <p id="verse-version"></p>
+            <div class="button-group">
+                <label for="version-select">Versão:</label>
+                <select id="version-select" onchange="updateVerseVersion()">
+                    <option value="" disabled selected></option>
+                </select>
+                <button onclick="generateRandomVerse()">Outro Versículo</button>
+            </div>
         </section>
         <section id="chapter-section">
             <h2>Leitura de Capítulo</h2>
@@ -28,6 +35,7 @@
             <input type="number" id="chapter-input" placeholder="Capítulo" min="1">
             <button onclick="readChapter()">Ler Capítulo</button>
             <div id="chapter-content"></div>
+            <p id="chapter-version"></p>
         </section>
         <section id="resources-section">
             <h2>Recursos de Estudo</h2>
@@ -39,7 +47,10 @@
         </section>
     </main>
     <script>
-        async function fetchBooks() {
+    let currentVersion = 'nvi';
+let currentVerseReference = null;
+
+async function fetchBooks() {
     try {
         const response = await fetch('https://www.abibliadigital.com.br/api/books');
         const data = await response.json();
@@ -55,30 +66,65 @@
     }
 }
 
+async function fetchVersions() {
+    try {
+        const response = await fetch('https://www.abibliadigital.com.br/api/versions');
+        const data = await response.json();
+        const versionSelect = document.getElementById('version-select');
+        data.forEach(version => {
+            const option = document.createElement('option');
+            option.value = version.version;
+            option.textContent = version.version.toUpperCase();
+            versionSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Erro ao buscar versões:', error);
+    }
+}
+
 async function generateRandomVerse() {
     try {
-        const response = await fetch('https://www.abibliadigital.com.br/api/verses/nvi/random');
+        const response = await fetch(`https://www.abibliadigital.com.br/api/verses/${currentVersion}/random`);
         const data = await response.json();
+        currentVerseReference = { book: data.book.abbrev.pt, chapter: data.chapter, verse: data.number };
         document.getElementById('random-verse').innerText = `${data.book.name} ${data.chapter}:${data.number} - ${data.text}`;
+        document.getElementById('verse-version').innerText = `Versão: ${currentVersion.toUpperCase()}`;
     } catch (error) {
         console.error('Erro ao buscar versículo aleatório:', error);
         document.getElementById('random-verse').innerText = 'Erro ao buscar versículo. Tente novamente mais tarde.';
+        document.getElementById('verse-version').innerText = '';
     }
 }
 
 async function searchVerse() {
     const query = document.getElementById('search-input').value;
+    const searchBody = {
+        version: currentVersion,
+        search: query
+    };
+
     try {
-        const response = await fetch(`https://www.abibliadigital.com.br/api/verses/nvi/${encodeURIComponent(query)}`);
+        const response = await fetch('https://www.abibliadigital.com.br/api/verses/search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(searchBody)
+        });
         const data = await response.json();
-        if (data.text) {
-            document.getElementById('random-verse').innerText = `${data.book.name} ${data.chapter}:${data.number} - ${data.text}`;
+        if (data.verses.length > 0) {
+            const verse = data.verses[0];
+            currentVerseReference = { book: verse.book.abbrev.pt, chapter: verse.chapter, verse: verse.number };
+            document.getElementById('random-verse').innerText = `${verse.book.name} ${verse.chapter}:${verse.number} - ${verse.text}`;
+            document.getElementById('verse-version').innerText = `Versão: ${currentVersion.toUpperCase()}`;
         } else {
             document.getElementById('random-verse').innerText = 'Nenhum versículo encontrado.';
+            document.getElementById('verse-version').innerText = '';
         }
     } catch (error) {
         console.error('Erro ao buscar versículo:', error);
         document.getElementById('random-verse').innerText = 'Erro ao buscar versículo. Tente novamente mais tarde.';
+        document.getElementById('verse-version').innerText = '';
     }
 }
 
@@ -86,7 +132,7 @@ async function readChapter() {
     const book = document.getElementById('book-select').value;
     const chapter = document.getElementById('chapter-input').value;
     try {
-        const response = await fetch(`https://www.abibliadigital.com.br/api/verses/nvi/${encodeURIComponent(book)}/${chapter}`);
+        const response = await fetch(`https://www.abibliadigital.com.br/api/verses/${currentVersion}/${encodeURIComponent(book)}/${chapter}`);
         const data = await response.json();
         if (data.verses) {
             let chapterContent = '';
@@ -94,21 +140,40 @@ async function readChapter() {
                 chapterContent += `<p><strong>${verse.number}:</strong> ${verse.text}</p>`;
             });
             document.getElementById('chapter-content').innerHTML = chapterContent;
+            document.getElementById('chapter-version').innerText = `Versão: ${currentVersion.toUpperCase()}`;
         } else {
             document.getElementById('chapter-content').innerText = 'Nenhum capítulo encontrado.';
+            document.getElementById('chapter-version').innerText = '';
         }
     } catch (error) {
         console.error('Erro ao buscar capítulo:', error);
         document.getElementById('chapter-content').innerText = 'Erro ao buscar capítulo. Tente novamente mais tarde.';
+        document.getElementById('chapter-version').innerText = '';
     }
 }
 
-// Gera um versículo aleatório ao carregar a página
+async function updateVerseVersion() {
+    const versionSelect = document.getElementById('version-select');
+    currentVersion = versionSelect.value;
+    if (currentVerseReference) {
+        try {
+            const response = await fetch(`https://www.abibliadigital.com.br/api/verses/${currentVersion}/${currentVerseReference.book}/${currentVerseReference.chapter}/${currentVerseReference.verse}`);
+            const data = await response.json();
+            document.getElementById('random-verse').innerText = `${data.book.name} ${data.chapter}:${data.number} - ${data.text}`;
+            document.getElementById('verse-version').innerText = `Versão: ${currentVersion.toUpperCase()}`;
+        } catch (error) {
+            console.error('Erro ao buscar versículo na nova versão:', error);
+            document.getElementById('random-verse').innerText = 'Erro ao buscar versículo. Tente novamente mais tarde.';
+            document.getElementById('verse-version').innerText = '';
+        }
+    }
+}
+
 window.onload = () => {
     generateRandomVerse();
     fetchBooks();
+    fetchVersions();
 };
-        
-    </script>
+</script>
 </body>
 </html>
