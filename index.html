@@ -19,6 +19,9 @@
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
             z-index: 1;
         }
+        .nav-buttons {
+            display: none; /* Ocultar os botões de navegação inicialmente */
+        }
     </style>
 </head>
 <body>
@@ -188,6 +191,7 @@
                     });
                     document.getElementById('chapter-content').innerHTML = chapterContent;
                     document.getElementById('chapter-version').innerText = `Versão: ${currentVersion.toUpperCase()}`;
+                    document.querySelector('.nav-buttons').style.display = 'block'; // Mostrar botões de navegação
                 } else {
                     document.getElementById('chapter-content').innerText = 'Nenhum capítulo encontrado.';
                     document.getElementById('chapter-version').innerText = '';
@@ -328,7 +332,6 @@
             generateRandomVerse();
             fetchBooks();
             fetchVersions();
-            highlightSavedVerses();
         };
 
         document.addEventListener('click', (event) => {
