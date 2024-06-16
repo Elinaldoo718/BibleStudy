@@ -55,7 +55,7 @@ main {
 
 #chapter-input,
 #version-select {
-    width: 80px;
+    width: 100px;
     padding: 0.5rem;
     margin: 0.5rem;
 }
