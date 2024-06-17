@@ -6,6 +6,82 @@
     <title>Estudo Interativo da Bíblia</title>
     <link rel="stylesheet" href="styles.css">
     <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .menu-hamburguer {
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            z-index: 1000;
+        }
+
+        .menu-hamburguer div {
+            width: 25px;
+            height: 3px;
+            background-color: black;
+            margin: 4px 0;
+            transition: 0.4s;
+        }
+
+        .menu-lateral {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 1000;
+            top: 0;
+            left: 0;
+            background-color: #111;
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 60px;
+        }
+
+        .menu-lateral a {
+            padding: 8px 8px 8px 32px;
+            text-decoration: none;
+            font-size: 25px;
+            color: #818181;
+            display: block;
+            transition: 0.3s;
+        }
+
+        .menu-lateral a:hover {
+            color: #f1f1f1;
+        }
+
+        .menu-lateral .fechar-menu {
+            position: absolute;
+            top: 0;
+            right: 25px;
+            font-size: 36px;
+            margin-left: 50px;
+        }
+
+        @media screen and (max-height: 450px) {
+            .menu-lateral {padding-top: 15px;}
+            .menu-lateral a {font-size: 18px;}
+        }
+
+        .nav-buttons {
+            display: none; /* Ocultar os botões de navegação inicialmente */
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+        }
+
+        header h1 {
+            margin-left: 50px; /* Ajuste a margem conforme necessário */
+        }
+        
         .saved-verse-dia {
             background-color: #ffffcc; /* Cor de destaque para versículos do dia salvos */
         }
@@ -25,6 +101,19 @@
     </style>
 </head>
 <body>
+    <div class="menu-hamburguer" onclick="abrirMenu()">
+        <div></div>
+        <div></div>
+        <div></div>
+    </div>
+
+    <div id="menuLateral" class="menu-lateral">
+        <a href="javascript:void(0)" class="fechar-menu" onclick="fecharMenu()">&times;</a>
+        <a href="plano-leitura.html">Plano de Leitura</a>
+        <a href="#">Vídeos</a>
+        <a href="#">Blog</a>
+    </div>
+
     <header>
         <h1>Estudo Interativo da Bíblia</h1>
     </header>
@@ -41,8 +130,9 @@
                 <button onclick="salvarVersiculo()">Salvar Versículo</button>
             </div>
             <div class="button-group">
+                <label for="version-select">Versão:</label>
                 <select id="version-select" onchange="updateVerseVersion()" style="width: 70px;">
-                    <option value="" disabled selected>Versão</option>
+                    <option value="" disabled selected>Selecione</option>
                 </select>
                 <button onclick="generateRandomVerse()">Outro Versículo</button>
                 <button id="toggle-saved-verses" onclick="toggleVersiculosSalvos()">Versículos Salvos</button>
@@ -83,6 +173,14 @@
         let currentChapter = null;
         let currentClickedVerse = null;
         let currentType = null;
+
+        function abrirMenu() {
+            document.getElementById("menuLateral").style.width = "250px";
+        }
+
+        function fecharMenu() {
+            document.getElementById("menuLateral").style.width = "0";
+        }
 
         async function fetchBooks() {
             try {
@@ -145,7 +243,7 @@
         async function searchVerse() {
             const query = document.getElementById('search-input').value;
             const searchBody = {
-                version: currentVersion,
+                version,
                 search: query
             };
 
@@ -246,10 +344,12 @@
         }
 
         function salvarVersiculo() {
-            const verseText = currentType === 'dia' ? document.getElementById('random-verse').innerText : `${currentClickedVerse.book} ${currentClickedVerse.chapter}:${currentClickedVerse.verse} - ${currentClickedVerse.text}`;
+            const verseText = currentType === 'dia' 
+                ? document.getElementById('random-verse').innerText 
+                : `${currentClickedVerse.book} ${currentClickedVerse.chapter}:${currentClickedVerse.verse} - ${currentClickedVerse.text}`;
             const savedVerses = JSON.parse(localStorage.getItem('savedVerses')) || [];
             const currentTime = new Date().toLocaleString();
-            savedVerses.push({ text: verseText, timestamp: currentTime, type: currentType });
+            savedVerses.push({ text: `${verseText} (Versão: ${currentVersion.toUpperCase()})`, timestamp: currentTime, type: currentType });
             localStorage.setItem('savedVerses', JSON.stringify(savedVerses));
             alert('Versículo salvo com sucesso!');
             document.getElementById('context-menu').style.display = 'none';
@@ -309,7 +409,7 @@
         function highlightSavedVerses() {
             const randomVerse = document.getElementById('random-verse');
             const verseText = randomVerse.innerText;
-            if (checkIfSaved(verseText)) {
+            if (checkIfSaved(`${verseText} (Versão: ${currentVersion.toUpperCase()})`)) {
                 randomVerse.classList.add('saved-verse-dia');
             } else {
                 randomVerse.classList.remove('saved-verse-dia');
@@ -319,7 +419,7 @@
             verses.forEach(verse => {
                 const verseNumber = verse.querySelector('strong').innerText;
                 const verseText = `${currentBook} ${currentChapter}:${verseNumber} - ${verse.innerText.split(`${verseNumber}: `)[1]}`;
-                if (checkIfSaved(verseText)) {
+                if (checkIfSaved(`${verseText} (Versão: ${currentVersion.toUpperCase()})`)) {
                     verse.classList.add('saved-verse-capitulo');
                 } else {
                     verse.classList.remove('saved-verse-capitulo');
