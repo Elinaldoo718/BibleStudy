@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plano de Leitura</title>
+    <link rel="stylesheet" href="styles11.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .nav-buttons {
+            display: none; /* Ocultar os botões de navegação inicialmente */
+        }
+
+        .progress-bar {
+            width: 100%;
+            background-color: #f3f3f3;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .progress-bar-fill {
+            height: 20px;
+            width: 0;
+            background-color: #4caf50;
+            border-radius: 5px;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+        }
+
+        .note-section {
+            margin-top: 20px;
+            text-align: center; /* Centralizar conteúdo */
+        }
+
+        #notes {
+            width: 80%; /* Largura da área de anotações */
+            margin: 0 auto; /* Centralizar horizontalmente */
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .note-buttons {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .note-buttons button {
+            margin-right: 10px;
+        }
+        
+        
+        
+        header {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+        }
+
+        header h1 {
+            margin-left: 50px; /* Ajuste a margem conforme necessário */
+        }
+        header a {
+            text-decoration: none;
+            color: #333;
+            display: flex;
+            align-items: center;
+        }
+
+        header a:hover {
+            text-decoration: underline;
+        }
+
+        header .back-home {
+            margin-right: auto;
+            
+        display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <header>
+           <div class="back-home">
+            <a href="eb19.html">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                    <path d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M20 11H7.414l2.293-2.293a1 1 0 0 0-1.414-1.414l-4 4a1 1 0 0 0 0 1.414l4 4a1 1 0 0 0 1.414-1.414L7.414 13H20a1 1 0 0 0 0-2z"/>
+                </svg>
+                
+            </a>
+        </div>
+        <h1>Plano de Leitura</h1>
+    </header>
+    <main>
+        <section id="chapter-section">
+            <h2>Seleção de Capítulo</h2>
+            <select id="book-select" onchange="fetchBookInfo()">
+                <option value="" disabled selected>Selecione um livro</option>
+            </select>
+            <p id="book-info"></p>
+            <input type="number" id="chapter-input" placeholder="Capítulo" min="1">
+            <button onclick="readChapter()">Ler Capítulo</button>
+            <div id="chapter-content"></div>
+            <div id="chapter-version"></div>
+            <div class="nav-buttons">
+                <button onclick="prevChapter()">Capítulo Anterior</button>
+                <button onclick="nextChapter()">Próximo Capítulo</button>
+            </div>
+            <div class="progress-bar">
+                <div id="progress-bar-fill" class="progress-bar-fill">0%</div>
+            </div>
+        </section>
+        <section class="note-section">
+            <h2>Anotações</h2>
+            <textarea id="notes" placeholder="Escreva suas anotações aqui..." rows="5" cols="50"></textarea>
+            <div class="note-buttons">
+                <button onclick="saveNotes()">Salvar Anotações</button>
+                <button onclick="viewNotes()">Ver Anotações</button>
+            </div>
+        </section>
+        <section id="saved-notes" class="note-section hidden">
+            <h2>Anotações Salvas</h2>
+            <div id="saved-notes-content"></div>
+        </section>
+    </main>
+    <script>
+        let currentVersion = 'nvi';
+        let currentBook = null;
+        let currentChapter = null;
+        let totalChapters = 0;
+        let readChapters = JSON.parse(localStorage.getItem('readChapters')) || {};
+
+        async function fetchBooks() {
+            try {
+                const response = await fetch('https://www.abibliadigital.com.br/api/books');
+                const data = await response.json();
+                const bookSelect = document.getElementById('book-select');
+                data.forEach(book => {
+                    const option = document.createElement('option');
+                    option.value = book.abbrev.pt;
+                    option.textContent = book.name;
+                    bookSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Erro ao buscar livros:', error);
+            }
+        }
+
+        async function fetchBookInfo() {
+            const book = document.getElementById('book-select').value;
+            currentBook = book;
+            try {
+                const response = await fetch(`https://www.abibliadigital.com.br/api/books/${book}`);
+                const data = await response.json();
+                totalChapters = data.chapters;
+                document.getElementById('book-info').innerText = `Autor: ${data.author}, Capítulos: ${data.chapters}, Grupo: ${data.group}, Testamento: ${data.testament}`;
+            } catch (error) {
+                console.error('Erro ao buscar informações do livro:', error);
+            }
+        }
+
+        async function readChapter() {
+            currentBook = document.getElementById('book-select').value;
+            currentChapter = document.getElementById('chapter-input').value;
+            try {
+                const response = await fetch(`https://www.abibliadigital.com.br/api/verses/${currentVersion}/${encodeURIComponent(currentBook)}/${currentChapter}`);
+                const data = await response.json();
+                if (data.verses) {
+                    let chapterContent = '';
+                    data.verses.forEach(verse => {
+                        chapterContent += `<p class="verse"><strong>${verse.number}:</strong> ${verse.text}</p>`;
+                    });
+                    document.getElementById('chapter-content').innerHTML = chapterContent;
+                    document.getElementById('chapter-version').innerText = `Versão: ${currentVersion.toUpperCase()}`;
+                    document.querySelector('.nav-buttons').style.display = 'block'; // Mostrar botões de navegação
+                    updateProgress();
+                    loadNotes();
+                } else {
+                    document.getElementById('chapter-content').innerText = 'Nenhum capítulo encontrado.';
+                    document.getElementById('chapter-version').innerText = '';
+                }
+            } catch (error) {
+                console.error('Erro ao buscar capítulo:', error);
+                document.getElementById('chapter-content').innerText = 'Erro ao buscar capítulo. Tente novamente mais tarde.';
+                document.getElementById('chapter-version').innerText = '';
+            }
+        }
+
+        function prevChapter() {
+            if (currentChapter > 1) {
+                currentChapter--;
+                document.getElementById('chapter-input').value = currentChapter;
+                readChapter();
+            }
+        }
+
+        function nextChapter() {
+            if (currentChapter < totalChapters) {
+                currentChapter++;
+                document.getElementById('chapter-input').value = currentChapter;
+                readChapter();
+            }
+        }
+
+        function saveNotes() {
+            const notes = document.getElementById('notes').value;
+            if (!readChapters[currentBook]) {
+                readChapters[currentBook] = {};
+            }
+            readChapters[currentBook][currentChapter] = { notes, read: true };
+            localStorage.setItem('readChapters', JSON.stringify(readChapters));
+            alert('Anotações salvas com sucesso!');
+            updateProgress();
+        }
+
+        function loadNotes() {
+            if (readChapters[currentBook] && readChapters[currentBook][currentChapter]) {
+                document.getElementById('notes').value = readChapters[currentBook][currentChapter].notes;
+            } else {
+                document.getElementById('notes').value = '';
+            }
+        }
+
+        function updateProgress() {
+            const bookChapters = readChapters[currentBook] || {};
+            const readCount = Object.keys(bookChapters).filter(chapter => bookChapters[chapter].read).length;
+            const progress = Math.round((readCount / totalChapters) * 100);
+            document.getElementById('progress-bar-fill').style.width = `${progress}%`;
+            document.getElementById('progress-bar-fill').innerText = `${progress}%`;
+        }
+
+        function viewNotes() {
+            const savedNotesSection = document.getElementById('saved-notes');
+            const savedNotesContent = document.getElementById('saved-notes-content');
+            savedNotesContent.innerHTML = ''; // Limpar conteúdo anterior
+
+            if (readChapters[currentBook] && readChapters[currentBook][currentChapter] && readChapters[currentBook][currentChapter].notes) {
+                const savedNotes = readChapters[currentBook][currentChapter].notes;
+                const notesElement = document.createElement('div');
+                notesElement.textContent = savedNotes;
+                savedNotesContent.appendChild(notesElement);
+            } else {
+                const noNotesMessage = document.createElement('p');
+                noNotesMessage.textContent = 'Nenhuma anotação salva para este capítulo.';
+                savedNotesContent.appendChild(noNotesMessage);
+            }
+
+            savedNotesSection.classList.toggle('hidden'); // Mostrar/ocultar seção de anotações salvas
+        }
+
+        window.onload = () => {
+            fetchBooks();
+        };
+    </script>
+</body>
+</html>
