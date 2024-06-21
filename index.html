@@ -22,7 +22,7 @@
         }
 
         nav ul {
-            list-style-type: none; /* Remove marcadores da lista */
+            list-style-type: none;
             padding: 0;
         }
 
@@ -57,18 +57,8 @@
         #verse-reference {
             font-weight: bold;
             color: #4CAF50;
-            cursor: pointer; /* Adiciona cursor de ponteiro */
+            cursor: pointer;
         }
-
-        /*footer {
-            background-color: #4CAF50;
-            color: white;
-            text-align: center;
-            padding: 10px 0;
-            position: fixed;
-            width: 100%;
-            bottom: 0;
-        }*/
 
         .dark-mode {
             background-color: #333;
@@ -92,7 +82,6 @@
             display: none;
         }
 
-        /* Estilos para o switch toggle */
         .switch {
             position: absolute;
             display: inline-block;
@@ -138,7 +127,6 @@
             transform: translateX(16px);
         }
 
-        /* Estilização adicional */
         .slider.round {
             border-radius: 24px;
         }
@@ -147,12 +135,10 @@
             border-radius: 50%;
         }
 
-        /* Estilo para destacar o versículo */
         .highlight {
             background-color: yellow;
         }
 
-        /* Remove marcadores da lista de capítulos */
         ul#chapter-list, ul#verse-list {
             list-style-type: none;
             padding: 0;
@@ -172,8 +158,57 @@
         .chapter-item:hover {
             background-color: #45a049;
         }
-        
-        
+
+        #favorites {
+            background-color: #FFFFFF;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: 20px auto;
+        }
+
+        #favorites h2 {
+            color: #4CAF50;
+        }
+
+        #favorites-list {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        #favorites-list li {
+            background-color: #f9f9f9;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            position: relative;
+        }
+
+        #favorites-list li:hover {
+            background-color: #f1f1f1;
+        }
+
+        .favorite-date {
+            font-size: 0.8em;
+            color: #777;
+            display: block;
+        }
+
+        .delete-link {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            color: red;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .delete-link:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -184,7 +219,7 @@
                 <li><a href="#"><img src="home.png" alt="Início" id="home-link" style="width:20px; height:20px;"></a></li>
                 <li><a href="#"><img src="lupa.png" alt="Pesquisar Versículos" id="search-link" style="width:20px; height:20px;"></a></li>
                 <li><a href="#"><img src="leitura.png" alt="Plano de Leitura" id="plans-link" style="width:20px; height:20px;"></a></li>
-                <li><a href="#"><img src="favoritos.png" alt="favoritos" id="favorites-link" style="width:20px; height:20px;"></a></li>
+                <li><a href="#"><img src="favoritos.png" alt="Favoritos" id="favorites-link" style="width:20px; height:20px;"></a></li>
                 <li><a href="#"><img src="anotacao.png" alt="Anotações" id="notes-link" style="width:20px; height:20px;"></a></li>
                 <li>
                     <label class="switch">
@@ -229,7 +264,8 @@
             }
 
             function saveFavorite(type, book, chapter, verse = '') {
-                const favorite = { type, book, chapter, verse };
+                const date = new Date();
+                const favorite = { type, book, chapter, verse, date };
                 favorites.push(favorite);
                 localStorage.setItem('favorites', JSON.stringify(favorites));
                 alert('Favorito salvo!');
@@ -238,6 +274,12 @@
             function loadFavorites() {
                 const savedFavorites = JSON.parse(localStorage.getItem('favorites')) || [];
                 favorites = savedFavorites;
+            }
+
+            function deleteFavorite(index) {
+                favorites.splice(index, 1);
+                localStorage.setItem('favorites', JSON.stringify(favorites));
+                displayFavorites();
             }
 
             function displayFavorites() {
@@ -251,13 +293,24 @@
                 contentElement.appendChild(favoritesSection);
 
                 const favoritesList = document.getElementById('favorites-list');
-                favorites.forEach(favorite => {
+                favorites.forEach((favorite, index) => {
                     const listItem = document.createElement('li');
-                    listItem.textContent = `${favorite.book} ${favorite.chapter}${favorite.verse ? ':' + favorite.verse : ''}`;
+                    listItem.innerHTML = `
+                        ${favorite.book} ${favorite.chapter}${favorite.verse? ':' + favorite.verse : ''}
+                        <span class="favorite-date">${new Date(favorite.date).toLocaleString()}</span>
+                        <a href="#" class="delete-link" data-index="${index}">Excluir</a>
+                    `;
                     listItem.addEventListener('click', () => {
                         loadSearchSection(favorite.book, favorite.chapter, favorite.verse);
                     });
                     favoritesList.appendChild(listItem);
+
+                    const deleteLink = listItem.querySelector('.delete-link');
+                    deleteLink.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const index = deleteLink.getAttribute('data-index');
+                        deleteFavorite(index);
+                    });
                 });
             }
 
@@ -278,31 +331,30 @@
                         'Authorization': `Bearer ${apiToken}`
                     }
                 })
-                    .then(response => response.json())
-                    .then(data => {
-                        const verse = data.text;
-                        const bookName = data.book.name;
-                        const chapter = data.chapter;
-                        const number = data.number;
+                .then(response => response.json())
+                .then(data => {
+                    const verse = data.text;
+                    const bookName = data.book.name;
+                    const chapter = data.chapter;
+                    const number = data.number;
 
-                        document.getElementById('verse-text').textContent = verse;
-                        const verseRefElement = document.getElementById('verse-reference');
-                        verseRefElement.textContent = `${bookName} ${chapter}:${number}`;
-                        verseRefElement.dataset.book = bookName;
-                        verseRefElement.dataset.chapter = chapter;
-                        verseRefElement.dataset.number = number;
+                    document.getElementById('verse-text').textContent = verse;
+                    const verseRefElement = document.getElementById('verse-reference');
+                    verseRefElement.textContent = `${bookName} ${chapter}:${number}`;
+                    verseRefElement.dataset.book = bookName;
+                    verseRefElement.dataset.chapter = chapter;
+                    verseRefElement.dataset.number = number;
 
-                        // Adicionando evento para navegar para a seção de pesquisa
-                        verseRefElement.addEventListener('click', () => {
-                            const book = verseRefElement.dataset.book;
-                            const chapter = parseInt(verseRefElement.dataset.chapter);
-                            loadSearchSection(book, chapter);
-                        });
-                    })
-                    .catch(error => {
-                        document.getElementById('verse-text').textContent = 'Erro ao carregar o versículo. Tente novamente mais tarde.';
-                        console.error('Erro:', error);
+                    verseRefElement.addEventListener('click', () => {
+                        const book = verseRefElement.dataset.book;
+                        const chapter = parseInt(verseRefElement.dataset.chapter);
+                        loadSearchSection(book, chapter);
                     });
+                })
+                .catch(error => {
+                    document.getElementById('verse-text').textContent = 'Erro ao carregar o versículo. Tente novamente mais tarde.';
+                    console.error('Erro:', error);
+                });
             });
 
             function loadSearchSection(book, chapter) {
@@ -316,7 +368,6 @@
                 `;
                 contentElement.appendChild(searchSection);
 
-                // Carregar lista de capítulos
                 const chapterList = document.getElementById('chapter-list');
                 for (let i = 1; i <= chapter; i++) {
                     const listItem = document.createElement('li');
@@ -328,34 +379,33 @@
                     chapterList.appendChild(listItem);
                 }
 
-                // Função para carregar versículos de um capítulo
                 function loadVerses(book, chapter) {
                     fetch(`https://www.abibliadigital.com.br/api/verses/ra/${book}/${chapter}`, {
                         headers: {
                             'Authorization': `Bearer ${apiToken}`
                         }
                     })
-                        .then(response => response.json())
-                        .then(data => {
-                            const verseList = document.getElementById('verse-list');
-                            verseList.innerHTML = '';
-                            data.verses.forEach(verse => {
-                                const verseItem = document.createElement('p');
-                                verseItem.textContent = `${verse.number}. ${verse.text}`;
-                                verseItem.addEventListener('click', () => {
-                                    saveFavorite('verse', book, chapter, verse.number);
-                                });
-                                verseList.appendChild(verseItem);
+                    .then(response => response.json())
+                    .then(data => {
+                        const verseList = document.getElementById('verse-list');
+                        verseList.innerHTML = '';
+                        data.verses.forEach(verse => {
+                            const verseItem = document.createElement('p');
+                            verseItem.textContent = `${verse.number}. ${verse.text}`;
+                            verseItem.addEventListener('click', () => {
+                                saveFavorite('verse', book, chapter, verse.number);
                             });
-                        })
-                        .catch(error => {
-                            console.error('Erro ao carregar versículos:', error);
+                            verseList.appendChild(verseItem);
                         });
+                    })
+                    .catch(error => {
+                        console.error('Erro ao carregar versículos:', error);
+                    });
                 }
             }
 
             searchLink.addEventListener('click', () => {
-                loadSearchSection('Gênesis', 50); // Exemplo inicial ao clicar em Pesquisar
+                loadSearchSection('Gênesis', 50);
             });
 
             plansLink.addEventListener('click', () => {
@@ -367,88 +417,103 @@
                     <div>
                         <label for="book-select">Selecione um livro:</label>
                         <select id="book-select"></select>
+                        <label for="version-select">Selecione uma versão:</label>
+                        <select id="version-select"></select>
                     </div>
                     <ul id="chapter-list"></ul>
                     <div id="verse-list"></div>
                 `;
                 contentElement.appendChild(plansSection);
 
-                // Carregar lista de livros da Bíblia
                 fetch('https://www.abibliadigital.com.br/api/books', {
                     headers: {
                         'Authorization': `Bearer ${apiToken}`
                     }
                 })
-                    .then(response => response.json())
-                    .then(books => {
-                        const bookSelect = document.getElementById('book-select');
-                        books.forEach(book => {
-                            const option = document.createElement('option');
-                            option.value = book.abbrev.pt;
-                            option.textContent = book.name;
-                            bookSelect.appendChild(option);
-                        });
-
-                        bookSelect.addEventListener('change', () => {
-                            const selectedBook = bookSelect.value;
-                            loadChapters(selectedBook);
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Erro ao carregar os livros:', error);
+                .then(response => response.json())
+                .then(books => {
+                    const bookSelect = document.getElementById('book-select');
+                    books.forEach(book => {
+                        const option = document.createElement('option');
+                        option.value = book.abbrev.pt;
+                        option.textContent = book.name;
+                        bookSelect.appendChild(option);
                     });
 
-                // Função para carregar capítulos de um livro
+                    bookSelect.addEventListener('change', () => {
+                        const selectedBook = bookSelect.value;
+                        loadChapters(selectedBook);
+                    });
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar os livros:', error);
+                });
+
+                fetch('https://www.abibliadigital.com.br/api/versions')
+                .then(response => response.json())
+                .then(versions => {
+                    const versionSelect = document.getElementById('version-select');
+                    versions.forEach(version => {
+                        const option = document.createElement('option');
+                        option.value = version.version;
+                        option.textContent = version.version.toUpperCase();
+                        versionSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar as versões:', error);
+                });
+
                 function loadChapters(bookAbbrev) {
                     fetch(`https://www.abibliadigital.com.br/api/books/${bookAbbrev}`, {
                         headers: {
                             'Authorization': `Bearer ${apiToken}`
                         }
                     })
-                        .then(response => response.json())
-                        .then(book => {
-                            const chapterList = document.getElementById('chapter-list');
-                            chapterList.innerHTML = '';
-                            for (let i = 1; i <= book.chapters; i++) {
-                                const listItem = document.createElement('li');
-                                listItem.textContent = `${i}`;
-                                listItem.classList.add('chapter-item');
-                                listItem.addEventListener('click', () => {
-                                    loadVerses(bookAbbrev, i);
-                                });
-                                chapterList.appendChild(listItem);
-                            }
-                            chapterList.style.display = 'flex';
-                            chapterList.style.flexWrap = 'wrap';
-                        })
-                        .catch(error => {
-                            console.error('Erro ao carregar capítulos:', error);
-                        });
+                    .then(response => response.json())
+                    .then(book => {
+                        const chapterList = document.getElementById('chapter-list');
+                        chapterList.innerHTML = '';
+                        for (let i = 1; i <= book.chapters; i++) {
+                            const listItem = document.createElement('li');
+                            listItem.textContent = `${i}`;
+                            listItem.classList.add('chapter-item');
+                            listItem.addEventListener('click', () => {
+                                loadVerses(bookAbbrev, i);
+                            });
+                            chapterList.appendChild(listItem);
+                        }
+                        chapterList.style.display = 'flex';
+                        chapterList.style.flexWrap = 'wrap';
+                    })
+                    .catch(error => {
+                        console.error('Erro ao carregar capítulos:', error);
+                    });
                 }
 
-                // Função para carregar versículos de um capítulo
                 function loadVerses(bookAbbrev, chapter) {
-                    fetch(`https://www.abibliadigital.com.br/api/verses/ra/${bookAbbrev}/${chapter}`, {
+                    const version = document.getElementById('version-select').value;
+                    fetch(`https://www.abibliadigital.com.br/api/verses/${version}/${bookAbbrev}/${chapter}`, {
                         headers: {
                             'Authorization': `Bearer ${apiToken}`
                         }
                     })
-                        .then(response => response.json())
-                        .then(data => {
-                            const verseList = document.getElementById('verse-list');
-                            verseList.innerHTML = '';
-                            data.verses.forEach(verse => {
-                                const verseItem = document.createElement('p');
-                                verseItem.textContent = `${verse.number}. ${verse.text}`;
-                                verseItem.addEventListener('click', () => {
-                                    saveFavorite('verse', bookAbbrev, chapter, verse.number);
-                                });
-                                verseList.appendChild(verseItem);
+                    .then(response => response.json())
+                    .then(data => {
+                        const verseList = document.getElementById('verse-list');
+                        verseList.innerHTML = '';
+                        data.verses.forEach(verse => {
+                            const verseItem = document.createElement('p');
+                            verseItem.textContent = `${verse.number}. ${verse.text}`;
+                            verseItem.addEventListener('click', () => {
+                                saveFavorite('verse', bookAbbrev, chapter, verse.number);
                             });
-                        })
-                        .catch(error => {
-                            console.error('Erro ao carregar versículos:', error);
+                            verseList.appendChild(verseItem);
                         });
+                    })
+                    .catch(error => {
+                        console.error('Erro ao carregar versículos:', error);
+                    });
                 }
             });
 
@@ -472,10 +537,6 @@
             });
 
             loadFavorites();
-            loadVerseOfTheDay();
-            
-            // Função inicial para carregar o Versículo do Dia ao abrir a página
-            //renderVerseOfTheDay();
         });
     </script>
 </body>
