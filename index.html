@@ -159,7 +159,98 @@
             background-color: #45a049;
         }
 
-        #favorites {
+        .chapter-item.read {
+            background-color: #6aaf65;
+        }
+
+        .progress-container {
+            width: 100%;
+            background-color: #ddd;
+            border-radius: 25px;
+            margin-top: 20px;
+        }
+
+        .progress-bar {
+            width: 0;
+            height: 20px;
+            background-color: #4CAF50;
+            border-radius: 25px;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+        }
+
+        .confirm-container {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .confirm-container input[type="checkbox"] {
+            margin-right: 10px;
+        }
+
+        .reading-history {
+            margin-top: 20px;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .history-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-item p {
+            margin: 5px 0;
+        }
+
+        .history-item .time-taken {
+            color: #777;
+        }
+        
+        .verse-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+
+        .verse-actions img {
+            width: 24px;
+            height: 24px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+
+        .favorite-saved {
+            filter: hue-rotate(90deg); /* Ajuste o valor para obter a cor verde desejada */
+        }
+
+        .chapter-quiz {
+            margin-top: 20px;
+        }
+
+        .chapter-quiz form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chapter-quiz form div {
+            margin-bottom: 10px;
+        }
+
+        #quiz-results {
+            margin-top: 20px;
+        }
+                #favorites {
             background-color: #FFFFFF;
             padding: 20px;
             border-radius: 8px;
@@ -231,19 +322,10 @@
         </nav>
     </header>
     <main id="content">
-        <section id="verse-of-the-day">
-            <h2>Versículo do Dia</h2>
-            <div id="verse-container">
-                <p id="verse-text">Carregando versículo...</p>
-                <p id="verse-reference" data-book="" data-chapter="" data-number=""></p>
-            </div>
-        </section>
+        <!-- O conteúdo dinâmico será inserido aqui -->
     </main>
-    
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const verseTextElement = document.getElementById('verse-text');
-            const verseReferenceElement = document.getElementById('verse-reference');
             const contentElement = document.getElementById('content');
             const homeLink = document.getElementById('home-link');
             const searchLink = document.getElementById('search-link');
@@ -296,7 +378,7 @@
                 favorites.forEach((favorite, index) => {
                     const listItem = document.createElement('li');
                     listItem.innerHTML = `
-                        ${favorite.book} ${favorite.chapter}${favorite.verse? ':' + favorite.verse : ''}
+                        ${favorite.book} ${favorite.chapter}${favorite.verse ? ':' + favorite.verse : ''}
                         <span class="favorite-date">${new Date(favorite.date).toLocaleString()}</span>
                         <a href="#" class="delete-link" data-index="${index}">Excluir</a>
                     `;
@@ -323,9 +405,21 @@
                     <div id="verse-container">
                         <p id="verse-text">Carregando versículo...</p>
                         <p id="verse-reference" data-book="" data-chapter="" data-number=""></p>
+                        <div class="verse-actions">
+                            <img src="salvar.png" alt="Salvar em Favoritos" id="save-favorite">
+                            <img src="compartilhar.png" alt="Compartilhar" id="share-verse">
+                            <img src="abrir.png" alt="Abrir Capítulo" id="open-chapter">
+                        </div>
                     </div>
                 `;
                 contentElement.appendChild(verseSection);
+
+                const verseTextElement = document.getElementById('verse-text');
+                const verseReferenceElement = document.getElementById('verse-reference');
+                const saveFavoriteButton = document.getElementById('save-favorite');
+                const shareVerseButton = document.getElementById('share-verse');
+                const openChapterButton = document.getElementById('open-chapter');
+
                 fetch('https://www.abibliadigital.com.br/api/verses/ra/random', {
                     headers: {
                         'Authorization': `Bearer ${apiToken}`
@@ -338,21 +432,39 @@
                     const chapter = data.chapter;
                     const number = data.number;
 
-                    document.getElementById('verse-text').textContent = verse;
-                    const verseRefElement = document.getElementById('verse-reference');
-                    verseRefElement.textContent = `${bookName} ${chapter}:${number}`;
-                    verseRefElement.dataset.book = bookName;
-                    verseRefElement.dataset.chapter = chapter;
-                    verseRefElement.dataset.number = number;
+                    verseTextElement.textContent = verse;
+                    verseReferenceElement.textContent = `${bookName} ${chapter}:${number}`;
+                    verseReferenceElement.dataset.book = bookName;
+                    verseReferenceElement.dataset.chapter = chapter;
+                    verseReferenceElement.dataset.number = number;
 
-                    verseRefElement.addEventListener('click', () => {
-                        const book = verseRefElement.dataset.book;
-                        const chapter = parseInt(verseRefElement.dataset.chapter);
-                        loadSearchSection(book, chapter);
+                    // Função para salvar em favoritos e mudar a cor do ícone
+                    saveFavoriteButton.addEventListener('click', () => {
+                        saveFavorite('verse', bookName, chapter, number);
+                        saveFavoriteButton.classList.add('favorite-saved');
+                    });
+
+                    // Função para compartilhar o versículo
+                    shareVerseButton.addEventListener('click', () => {
+                        const shareText = `${verse} - ${bookName} ${chapter}:${number}`;
+                        if (navigator.share) {
+                            navigator.share({
+                                title: 'Versículo do Dia',
+                                text: shareText,
+                                url: window.location.href
+                            }).catch(error => console.error('Erro ao compartilhar:', error));
+                        } else {
+                            prompt('Copie e compartilhe este versículo:', shareText);
+                        }
+                    });
+
+                    // Função para abrir o capítulo
+                    openChapterButton.addEventListener('click', () => {
+                        loadSearchSection(bookName, chapter);
                     });
                 })
                 .catch(error => {
-                    document.getElementById('verse-text').textContent = 'Erro ao carregar o versículo. Tente novamente mais tarde.';
+                    verseTextElement.textContent = 'Erro ao carregar o versículo. Tente novamente mais tarde.';
                     console.error('Erro:', error);
                 });
             });
@@ -404,16 +516,17 @@
                 }
             }
 
-            searchLink.addEventListener('click', () => {
-                loadSearchSection('Gênesis', 50);
+            plansLink.addEventListener('click', () => {
+                createReadingPlanSection();
             });
 
-            plansLink.addEventListener('click', () => {
+            function createReadingPlanSection() {
                 clearContent();
+
                 const plansSection = document.createElement('section');
+                plansSection.id = 'reading-plan';
                 plansSection.innerHTML = `
-                    <h2>Planos de Leitura</h2>
-                    <p>Aqui você pode criar seus planos de leitura da Bíblia.</p>
+                    <h2>Plano de Leitura</h2>
                     <div>
                         <label for="book-select">Selecione um livro:</label>
                         <select id="book-select"></select>
@@ -422,8 +535,178 @@
                     </div>
                     <ul id="chapter-list"></ul>
                     <div id="verse-list"></div>
+                    <div class="progress-container">
+                        <div class="progress-bar">0%</div>
+                    </div>
+                    <div class="reading-history">
+                        <h3>Histórico de Leitura</h3>
+                        <div id="history-list"></div>
+                    </div>
+                    <div class="chapter-quiz">
+                        <h3>Avaliação do Capítulo</h3>
+                        <form id="quiz-form"></form>
+                        <button id="submit-quiz">Enviar Avaliação</button>
+                        <div id="quiz-results"></div>
+                    </div>
                 `;
                 contentElement.appendChild(plansSection);
+
+                const progressBar = plansSection.querySelector('.progress-bar');
+                const historyList = document.getElementById('history-list');
+                const quizForm = document.getElementById('quiz-form');
+                const quizResults = document.getElementById('quiz-results');
+                const submitQuizButton = document.getElementById('submit-quiz');
+
+                let readingStartTime;
+                let questions = [
+                    { question: "Quem foi o autor deste capítulo?", correctAnswer: "Autor X" },
+                    { question: "Qual é o tema principal?", correctAnswer: "Tema Y" },
+                    // Adicione mais perguntas conforme necessário
+                ];
+
+                function updateProgress(readChapters, totalChapters) {
+                    const percentage = (readChapters / totalChapters) * 100;
+                    progressBar.style.width = percentage + '%';
+                    progressBar.textContent = `${Math.round(percentage)}%`;
+                }
+
+                function loadHistory() {
+                    const history = JSON.parse(localStorage.getItem('readingHistory')) || [];
+                    history.forEach(item => {
+                        addHistoryItemToDOM(item);
+                    });
+                }
+
+                function saveHistoryItem(item) {
+                    const history = JSON.parse(localStorage.getItem('readingHistory')) || [];
+                    history.push(item);
+                    localStorage.setItem('readingHistory', JSON.stringify(history));
+                    addHistoryItemToDOM(item);
+                }
+
+                function addHistoryItemToDOM(item) {
+                    const historyItem = document.createElement('div');
+                    historyItem.classList.add('history-item');
+                    historyItem.innerHTML = `
+                        <p><strong>Referência:</strong> ${item.book} ${item.chapter}</p>
+                        <p><strong>Versão:</strong> ${item.version}</p>
+                        <p><strong>Data:</strong> ${new Date(item.endTime).toLocaleDateString()}</p>
+                        <p><strong>Hora:</strong> ${new Date(item.endTime).toLocaleTimeString()}</p>
+                        <p class="time-taken"><strong>Tempo levado:</strong> ${item.timeTaken.toFixed(2)} segundos</p>
+                    `;
+                    historyList.appendChild(historyItem);
+                }
+
+                function loadQuestions() {
+                    quizForm.innerHTML = '';
+                    questions.forEach((q, index) => {
+                        const questionElement = document.createElement('div');
+                        questionElement.innerHTML = `
+                            <p>${q.question}</p>
+                            <input type="text" id="question-${index}" data-answer="${q.correctAnswer}">
+                        `;
+                        quizForm.appendChild(questionElement);
+                    });
+                }
+
+                function gradeQuiz() {
+                    let score = 0;
+                    questions.forEach((q, index) => {
+                        const userAnswer = document.getElementById(`question-${index}`).value.trim();
+                        if (userAnswer.toLowerCase() === q.correctAnswer.toLowerCase()) {
+                            score++;
+                        }
+                    });
+                    quizResults.textContent = `Você acertou ${score} de ${questions.length} perguntas.`;
+                }
+
+                submitQuizButton.addEventListener('click', () => {
+                    gradeQuiz();
+                });
+
+                function loadVerses(bookAbbrev, chapter) {
+                    const version = document.getElementById('version-select').value;
+                    fetch(`https://www.abibliadigital.com.br/api/verses/${version}/${bookAbbrev}/${chapter}`, {
+                        headers: {
+                            'Authorization': `Bearer ${apiToken}`
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        const verseList = document.getElementById('verse-list');
+                        verseList.innerHTML = '';
+                        data.verses.forEach(verse => {
+                            const verseItem = document.createElement('p');
+                            verseItem.textContent = `${verse.number}. ${verse.text}`;
+                            verseList.appendChild(verseItem);
+                        });
+
+                        const confirmContainer = document.createElement('div');
+                        confirmContainer.classList.add('confirm-container');
+                        confirmContainer.innerHTML = `
+                            <input type="checkbox" id="confirm-read" />
+                            <label for="confirm-read">Confirmar leitura do capítulo ${chapter}</label>
+                        `;
+                        verseList.appendChild(confirmContainer);
+
+                        const confirmReadCheckbox = document.getElementById('confirm-read');
+                        confirmReadCheckbox.addEventListener('change', () => {
+                            if (confirmReadCheckbox.checked) {
+                                const endTime = new Date();
+                                document.querySelector(`.chapter-item:nth-child(${chapter})`).classList.add('read');
+                                const readChapters = document.querySelectorAll('.chapter-item.read').length;
+                                updateProgress(readChapters, document.querySelectorAll('.chapter-item').length);
+
+                                const timeTaken = (endTime - readingStartTime) / 1000;
+                                const historyItem = {
+                                    book: bookAbbrev,
+                                    chapter: chapter,
+                                    version: version,
+                                    startTime: readingStartTime,
+                                    endTime: endTime,
+                                    timeTaken: timeTaken
+                                };
+                                saveHistoryItem(historyItem);
+                            } else {
+                                document.querySelector(`.chapter-item:nth-child(${chapter})`).classList.remove('read');
+                                const readChapters = document.querySelectorAll('.chapter-item.read').length;
+                                updateProgress(readChapters, document.querySelectorAll('.chapter-item').length);
+                            }
+                        });
+
+                        loadQuestions();
+                    })
+                    .catch(error => {
+                        console.error('Erro ao carregar versículos:', error);
+                    });
+                }
+
+                function loadChapters(bookAbbrev) {
+                    fetch(`https://www.abibliadigital.com.br/api/books/${bookAbbrev}`, {
+                        headers: {
+                            'Authorization': `Bearer ${apiToken}`
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(book => {
+                        const chapterList = document.getElementById('chapter-list');
+                        chapterList.innerHTML = '';
+                        for (let i = 1; i <= book.chapters; i++) {
+                            const listItem = document.createElement('li');
+                            listItem.textContent = `${i}`;
+                            listItem.classList.add('chapter-item');
+                            listItem.addEventListener('click', () => {
+                                readingStartTime = new Date();
+                                loadVerses(bookAbbrev, i);
+                            });
+                            chapterList.appendChild(listItem);
+                        }
+                        updateProgress(0, book.chapters);
+                    })
+                    .catch(error => {
+                        console.error('Erro ao carregar capítulos:', error);
+                    });
+                }
 
                 fetch('https://www.abibliadigital.com.br/api/books', {
                     headers: {
@@ -464,58 +747,8 @@
                     console.error('Erro ao carregar as versões:', error);
                 });
 
-                function loadChapters(bookAbbrev) {
-                    fetch(`https://www.abibliadigital.com.br/api/books/${bookAbbrev}`, {
-                        headers: {
-                            'Authorization': `Bearer ${apiToken}`
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(book => {
-                        const chapterList = document.getElementById('chapter-list');
-                        chapterList.innerHTML = '';
-                        for (let i = 1; i <= book.chapters; i++) {
-                            const listItem = document.createElement('li');
-                            listItem.textContent = `${i}`;
-                            listItem.classList.add('chapter-item');
-                            listItem.addEventListener('click', () => {
-                                loadVerses(bookAbbrev, i);
-                            });
-                            chapterList.appendChild(listItem);
-                        }
-                        chapterList.style.display = 'flex';
-                        chapterList.style.flexWrap = 'wrap';
-                    })
-                    .catch(error => {
-                        console.error('Erro ao carregar capítulos:', error);
-                    });
-                }
-
-                function loadVerses(bookAbbrev, chapter) {
-                    const version = document.getElementById('version-select').value;
-                    fetch(`https://www.abibliadigital.com.br/api/verses/${version}/${bookAbbrev}/${chapter}`, {
-                        headers: {
-                            'Authorization': `Bearer ${apiToken}`
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        const verseList = document.getElementById('verse-list');
-                        verseList.innerHTML = '';
-                        data.verses.forEach(verse => {
-                            const verseItem = document.createElement('p');
-                            verseItem.textContent = `${verse.number}. ${verse.text}`;
-                            verseItem.addEventListener('click', () => {
-                                saveFavorite('verse', bookAbbrev, chapter, verse.number);
-                            });
-                            verseList.appendChild(verseItem);
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Erro ao carregar versículos:', error);
-                    });
-                }
-            });
+                loadHistory();
+            }
 
             favoritesLink.addEventListener('click', () => {
                 displayFavorites();
@@ -535,6 +768,8 @@
             toggleModeSwitch.addEventListener('change', () => {
                 toggleDarkMode();
             });
+            
+            homeLink.click(); // Carregar a seção inicial ao abrir a página
 
             loadFavorites();
         });
